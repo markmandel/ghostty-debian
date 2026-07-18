@@ -76,6 +76,7 @@ RUN set -eu; \
     PKGROOT="/pkg/ghostty-${GHOSTTY_VERSION}"; \
     ARCH="$(dpkg --print-architecture)"; \
     mkdir -p "${PKGROOT}/DEBIAN"; \
+    rm -f "${PKGROOT}/usr/share/terminfo/g/ghostty"; \
     mkdir -p /tmp/shlibs/debian; \
     printf 'Source: ghostty\nPackage: ghostty\nArchitecture: %s\n' "${ARCH}" \
       > /tmp/shlibs/debian/control; \
@@ -89,6 +90,7 @@ RUN set -eu; \
       echo "Architecture: ${ARCH}"; \
       echo "Maintainer: ${GHOSTTY_DEB_MAINTAINER:-unset <unset@example.com>}"; \
       echo "Depends: ${DEPENDS}"; \
+      echo "Recommends: ncurses-term"; \
       echo "Homepage: https://ghostty.org"; \
       echo "Description: Fast, native, GPU-accelerated terminal emulator"; \
       echo " Ghostty is a terminal emulator that differentiates itself from other"; \
