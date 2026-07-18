@@ -27,7 +27,7 @@ jobs:
       zig_version: ${{ steps.vars.outputs.zig_version }}
       pkg_revision: ${{ steps.vars.outputs.pkg_revision }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: vars
         run: |
           GHOSTTY_VERSION="${{ inputs.ghostty_version }}"
@@ -50,7 +50,7 @@ jobs:
       matrix:
         suite: [stable, testing]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v3
       - name: Build .deb
         run: |
