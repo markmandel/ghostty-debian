@@ -15,23 +15,38 @@
 # limitations under the License.
 
 # Builds a release .deb package of Ghostty (https://ghostty.org) for Debian
-# testing. Follows the official build instructions at
+# stable or testing. Follows the official build instructions at
 # https://ghostty.org/docs/install/build
 #
 # Usage:
 #   DOCKER_BUILDKIT=1 docker build --output=build .
 #   sudo apt install ./build/ghostty_*.deb
+#
+# Build against Debian stable instead of testing, and/or bump the package
+# revision for a rebuild-only release:
+#   DOCKER_BUILDKIT=1 docker build --output=build \
+#     --build-arg DEBIAN_SUITE=stable \
+#     --build-arg PKG_REVISION=2 \
+#     .
 
 ARG GHOSTTY_VERSION=1.3.1
 # Must match the Zig version required by GHOSTTY_VERSION, per
 # https://ghostty.org/docs/install/build
 ARG ZIG_VERSION=0.15.2
 ARG MAINTAINER="Mark Mandel <mark@compoundtheory.com>"
+# Debian suite to build against: stable or testing.
+ARG DEBIAN_SUITE=testing
+# Debian package revision. Bump this (and reset it to 1 whenever
+# GHOSTTY_VERSION changes) to force a new release without a new upstream
+# Ghostty version, e.g. after a dependency-only rebuild.
+ARG PKG_REVISION=1
 
-FROM debian:testing AS builder
+FROM debian:${DEBIAN_SUITE} AS builder
 ARG GHOSTTY_VERSION
 ARG ZIG_VERSION
 ARG MAINTAINER
+ARG DEBIAN_SUITE
+ARG PKG_REVISION
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -77,6 +92,8 @@ RUN zig build -Doptimize=ReleaseFast -p "/pkg/ghostty-${GHOSTTY_VERSION}/usr"
 RUN set -eu; \
     PKGROOT="/pkg/ghostty-${GHOSTTY_VERSION}"; \
     ARCH="$(dpkg --print-architecture)"; \
+    CODENAME="$(. /etc/os-release && echo "${VERSION_CODENAME:-$DEBIAN_SUITE}")"; \
+    PKG_VERSION="${GHOSTTY_VERSION}-${PKG_REVISION}~${CODENAME}"; \
     mkdir -p "${PKGROOT}/DEBIAN"; \
     rm -f "${PKGROOT}/usr/share/terminfo/g/ghostty"; \
     mkdir -p /tmp/shlibs/debian; \
@@ -86,7 +103,7 @@ RUN set -eu; \
       | sed -n 's/^shlibs:Depends=//p')"; \
     { \
       echo "Package: ghostty"; \
-      echo "Version: ${GHOSTTY_VERSION}"; \
+      echo "Version: ${PKG_VERSION}"; \
       echo "Section: utils"; \
       echo "Priority: optional"; \
       echo "Architecture: ${ARCH}"; \
@@ -100,11 +117,11 @@ RUN set -eu; \
       echo " Ghostty is a terminal emulator that differentiates itself from other"; \
       echo " terminal emulators in a few key ways: fast, feature-rich, and native."; \
       echo " This build was compiled from the official release source tarball"; \
-      echo " (ReleaseFast) and packaged for Debian testing."; \
+      echo " (ReleaseFast) and packaged for Debian ${CODENAME}."; \
     } > "${PKGROOT}/DEBIAN/control"; \
     mkdir -p /out; \
     dpkg-deb --build --root-owner-group "${PKGROOT}" \
-      "/out/ghostty_${GHOSTTY_VERSION}_${ARCH}.deb"
+      "/out/ghostty_${PKG_VERSION}_${ARCH}.deb"
 
 FROM scratch AS export
 COPY --from=builder /out/*.deb /

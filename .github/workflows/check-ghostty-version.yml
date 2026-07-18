@@ -1,0 +1,53 @@
+name: Check for new Ghostty release
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Weekly, Monday 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          # Ghostty doesn't publish numbered GitHub Releases (only the "tip"
+          # nightly is a Release object) -- the real version tags only show
+          # up via the git tags API, so use that instead of releases/latest.
+          CURRENT="$(grep -m1 '^ARG GHOSTTY_VERSION=' Dockerfile | cut -d= -f2)"
+          LATEST="$(gh api 'repos/ghostty-org/ghostty/tags?per_page=30' \
+            --jq '[.[] | select(.name != "tip")][0].name' | sed 's/^v//')"
+
+          echo "Currently packaging: $CURRENT"
+          echo "Latest upstream:     $LATEST"
+
+          if [ "$CURRENT" = "$LATEST" ]; then
+            echo "Up to date, nothing to do."
+            exit 0
+          fi
+
+          TITLE="Ghostty $LATEST released (currently packaging $CURRENT)"
+          EXISTING="$(gh issue list --repo "${{ github.repository }}" --state open \
+            --search "in:title \"$TITLE\"" --json number --jq '.[0].number')"
+
+          if [ -n "$EXISTING" ]; then
+            echo "Tracking issue #$EXISTING already open, nothing to do."
+            exit 0
+          fi
+
+          gh issue create --repo "${{ github.repository }}" \
+            --title "$TITLE" \
+            --body "$(cat <<EOF
+          Ghostty [$LATEST](https://github.com/ghostty-org/ghostty/releases/tag/v$LATEST) has been released upstream. This repo is currently pinned to \`$CURRENT\`.
+
+          Before bumping \`GHOSTTY_VERSION\` in the \`Dockerfile\`, check whether \`ZIG_VERSION\` also needs to change for this release, per the [build docs](https://ghostty.org/docs/install/build#zig-version).
+
+          This issue was filed automatically by the \`check-ghostty-version\` workflow.
+          EOF
+          )"
