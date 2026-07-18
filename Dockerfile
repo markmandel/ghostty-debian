@@ -26,10 +26,12 @@ ARG GHOSTTY_VERSION=1.3.1
 # Must match the Zig version required by GHOSTTY_VERSION, per
 # https://ghostty.org/docs/install/build
 ARG ZIG_VERSION=0.15.2
+ARG MAINTAINER="Mark Mandel <mark@compoundtheory.com>"
 
 FROM debian:testing AS builder
 ARG GHOSTTY_VERSION
 ARG ZIG_VERSION
+ARG MAINTAINER
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -88,10 +90,12 @@ RUN set -eu; \
       echo "Section: utils"; \
       echo "Priority: optional"; \
       echo "Architecture: ${ARCH}"; \
-      echo "Maintainer: ${GHOSTTY_DEB_MAINTAINER:-unset <unset@example.com>}"; \
+      echo "Maintainer: ${MAINTAINER}"; \
       echo "Depends: ${DEPENDS}"; \
       echo "Recommends: ncurses-term"; \
       echo "Homepage: https://ghostty.org"; \
+      echo "Vcs-Browser: https://github.com/markmandel/ghostty-debian"; \
+      echo "Vcs-Git: https://github.com/markmandel/ghostty-debian.git"; \
       echo "Description: Fast, native, GPU-accelerated terminal emulator"; \
       echo " Ghostty is a terminal emulator that differentiates itself from other"; \
       echo " terminal emulators in a few key ways: fast, feature-rich, and native."; \

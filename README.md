@@ -1,5 +1,8 @@
 # ghostty-debian
 
+> ⚠️ **Warning**: I'm still testing this out for my own usage, but so far so good.
+> In the long term would like to expand this to Debian stable, testing and experimental - but first time building out this kind of packaging infra, so taking things step by step and dogfooding my own tools in the process.
+
 Builds a release `.deb` package of [Ghostty](https://ghostty.org) for Debian
 testing, using Docker so you don't need Zig or Ghostty's build dependencies
 installed on your own machine. Ghostty isn't packaged in Debian, so this
